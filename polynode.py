@@ -28,6 +28,9 @@ priv_key  = user_path+"/certs/private.pem.key"
 topic     = "polyver1_data"
 client_id = "polyver1-" + str(uuid4())
 
+# ---- Globals -----------------------------
+mqtt_connection = None
+
 # ---- Callback MQTT functions -------------
 
 # Callback when connection is accidentally lost.
@@ -61,10 +64,11 @@ def on_message_received(topic, payload, dup, qos, retain, **kwargs):
     # if received_count == cmdUtils.get_command("count"):
     #     received_all_event.set()
 
-# ---- Main program ------------------------
+# ---- Setup Functions ---------------------
 
-if __name__ == "__main__":
+def mqtt_connect():
     # Build connection
+    global mqtt_connection
     mqtt_connection = mqtt_connection_builder.mtls_from_path(
         endpoint=endpoint,
         cert_filepath=cert,
@@ -82,30 +86,47 @@ if __name__ == "__main__":
     connect_future.result()     # wait for result to be ready
     print("Connected!")
 
-    # Subcribe to topic
-    print("Subscribing to topic '{}'...".format(topic))
-    subscribe_future, packet_id = mqtt_connection.subscribe(
-        topic=topic,
-        qos=mqtt.QoS.AT_LEAST_ONCE,
-        callback=on_message_received)
-    subscribe_result = subscribe_future.result()
-    print("Subscribed with {}".format(str(subscribe_result["qos"])))
-   
-    # Test send message
-    message = "test message from polyver1"
-    print("Publishing message to topic '{}': {}".format(topic, message))
-    #message_json = json.dumps(message)
-    mqtt_connection.publish(
-        topic=topic,
-        payload=message,
-        qos=mqtt.QoS.AT_LEAST_ONCE)
+def mqtt_disconnect():
+    if mqtt_connection is None:
+        print("No connection found")
+        return
     
-    # Wait message to send and be received
-    time.sleep(5)
-
-    # Finshed, disconnect from MQTT server
     print("Disconnecting...")
     disconnect_future = mqtt_connection.disconnect()
     disconnect_future.result()
     print("Disconnected!")
+
+def mqtt_subscribe(topic, callback):
+    print("Subscribing to topic '{}'...".format(topic))
+    subscribe_future, packet_id = mqtt_connection.subscribe(
+        topic=topic,
+        qos=mqtt.QoS.AT_LEAST_ONCE,
+        callback=callback)
+    subscribe_result = subscribe_future.result()
+    print("Subscribed with {}".format(str(subscribe_result["qos"])))
+
+def mqtt_send(message):
+    print("Publishing message to topic '{}': {}".format(topic, message))
+    mqtt_connection.publish(
+        topic=topic,
+        payload=message,
+        qos=mqtt.QoS.AT_LEAST_ONCE)
+
+
+# ---- Main program ------------------------
+
+if __name__ == "__main__":
+    mqtt_connect()
+
+    # Subcribe to topic
+    mqtt_subscribe(topic, on_message_received)
+   
+    # Test send message
+    mqtt_send("test message from polyver1")
+    
+    # Wait message to send and be received
+    time.sleep(5)
+
+    mqtt_disconnect()
+    
 
