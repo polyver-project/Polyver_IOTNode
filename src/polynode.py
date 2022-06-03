@@ -121,7 +121,7 @@ def arduino_rx():
 
 def controller_rx():
     controller = PolyverController(event_callback=send_command,interface="/dev/input/js0", connecting_using_ds4drv=False)
-    controller.listen()
+    controller.listen(timeout=3600)
 
 # ---- Main program ------------------------
 def on_command_received(topic, payload, dup, qos, retain, **kwargs):
@@ -139,13 +139,8 @@ def on_command_received(topic, payload, dup, qos, retain, **kwargs):
     elif (payload_json['cmd'] == 'down'):
         output_str = 'x:0 y:-6'
 
-    # Added end of line delimiter
-    output_str += '\n'
-
     # Send to Arduino
-    ser.write(output_str.encode('utf8', 'ignore'))
-
-    print("Send command: " + output_str)
+    send_command(output_str)
 
 def send_command(command):
     current_ms = int(round(time.time() * 1000))
