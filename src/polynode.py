@@ -119,6 +119,14 @@ def arduino_rx():
         cmdLine = str(ser.readline()).encode('utf8', 'ignore')
         print(cmdLine)
 
+        if b'lat' in cmdLine:
+            gps_data = cmdLine.split(b',')
+            gps_lat  = gps_data[1].decode("utf-8")
+            gps_lon  = gps_data[3].decode("utf-8").replace('\\r', '').replace('\\n', '').replace('\'', '')
+
+            gps_data_formatted = '{"lat": ' + gps_lat + ',"long": ' + gps_lon + ', "rover": "Dr. Polyver"}'
+            mqtt_send(gps_data_formatted, 'telemetry')
+
 def controller_rx():
     controller = PolyverController(event_callback=send_command,interface="/dev/input/js0", connecting_using_ds4drv=False)
     controller.listen(timeout=3600)
@@ -159,7 +167,7 @@ def send_command(command):
 
 if __name__ == "__main__":
     # Open serial connection 
-    ser = serial.Serial('/dev/ttyUSB0')
+    ser = serial.Serial('/dev/ttyUSB1')
 
     # Create thread for listening to arduino communication and wait for arduino to restart program
     t_arduino_rx = threading.Thread(target=arduino_rx)
@@ -174,7 +182,9 @@ if __name__ == "__main__":
     mqtt_connect()
 
     # Subcribe to topic
-    mqtt_subscribe("polyver1/command", on_command_received)
+    mqtt_subscribe("Dr. Polyver/command", on_command_received)
+   
+
    
     # Test send message
     # mqtt_send("test message from polyver1", "polyver1/telemetry")

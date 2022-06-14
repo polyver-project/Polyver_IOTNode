@@ -12,8 +12,8 @@ from pyPS4Controller.controller import Controller
 
 class PolyverController(Controller):
     # ---- Constants -----------------------
-    MAX_SPEED_OUTPUT = 250
-    MIN_SPEED_OUTPUT = -250
+    MAX_SPEED_OUTPUT = 400
+    MIN_SPEED_OUTPUT = -400
 
     MOVE_STEP        = 6
 
